@@ -79,7 +79,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://agentic-travel-concierge-9v5hlnpho-chandana-b-s-projects.vercel.app",
+        "https://travelagent-ruddy.vercel.app",
+        
     ],
     allow_credentials=True,
     allow_methods=["*"],
