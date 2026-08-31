@@ -1488,3 +1488,62 @@ textarea:focus {
   transform: none;
   box-shadow: none;
 }
+
+/* ==========================================================
+   MAIN BRAND TITLE VISIBILITY
+   ========================================================== */
+
+.brand-title,
+.logo-title,
+.app-title,
+header h1,
+header h2 {
+  color: #172033 !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  line-height: 1.2;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* If the title is inside a brand/header container */
+.brand,
+.brand-section,
+.logo,
+.header-brand {
+  color: #172033 !important;
+}
+
+/* Make subtitle/text below the title readable */
+.brand-subtitle,
+.header-subtitle {
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+/* Header brand visibility */
+.brand h1 {
+  color: #172033 !important;
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.brand p {
+  color: #64748b !important;
+  font-size: 14px;
+  margin: 5px 0 0;
+}
+
+.brand-logo {
+  font-size: 28px;
+  color: #172033;
+}
+.brand-logo {
+  color: #ffffff !important;
+}
+
+
+.brand p {
+  color: #cbd5e1 !important;
+}

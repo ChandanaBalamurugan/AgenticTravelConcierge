@@ -1119,37 +1119,37 @@ const [replanMessage, setReplanMessage] = useState("");
 
     <div className="replan-examples">
 
-      <button
-        onClick={() =>
-          setReplanRequest(
-            "Find a cheaper hotel"
-          )
-        }
-      >
-        Find a cheaper hotel
-      </button>
+  <button
+    onClick={() =>
+      setReplanRequest(
+        "Find a cheaper hotel"
+      )
+    }
+  >
+    Find a cheaper hotel
+  </button>
 
-      <button
-        onClick={() =>
-          setReplanRequest(
-            "Find a different hotel"
-          )
-        }
-      >
-        Find a different hotel
-      </button>
+  <button
+    onClick={() =>
+      setReplanRequest(
+        "Find a cheaper hotel"
+      )
+    }
+  >
+    Find a cheaper hotel
+  </button>
 
-      <button
-        onClick={() =>
-          setReplanRequest(
-            "Make the trip cheaper"
-          )
-        }
-      >
-        Make the trip cheaper
-      </button>
+  <button
+    onClick={() =>
+      setReplanRequest(
+        "Make it cheaper"
+      )
+    }
+  >
+    Make it cheaper
+  </button>
 
-    </div>
+</div>
 
     {replanMessage && (
       <div className="replan-success">
