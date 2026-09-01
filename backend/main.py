@@ -78,7 +78,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://localhost:5174",
         "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
         "https://travelersagent.vercel.app",
         "https://agentic-travel-concierge-o3qj.vercel.app",
         "https://agentic-travel-concierge-o3qj-pfaxmjaer-chandana-b-s-projects.vercel.app",

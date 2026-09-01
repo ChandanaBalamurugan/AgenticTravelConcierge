@@ -25,6 +25,10 @@ const [replanMessage, setReplanMessage] = useState("");
   // PLAN TRIP
   // ==================================================
 
+ 
+
+
+  // rest of your code...
   const planTrip = async () => {
     if (!goal.trim()) {
       setError("Please describe your trip.");
@@ -51,6 +55,7 @@ const [replanMessage, setReplanMessage] = useState("");
       );
 
       const data = await response.json();
+     
 
       if (!response.ok) {
         throw new Error(
@@ -86,13 +91,26 @@ const [replanMessage, setReplanMessage] = useState("");
         `${API_URL}/agent/${resumeId.trim()}/resume`
       );
 
-      const data = await response.json();
+      const contentType =
+  response.headers.get("content-type") || "";
 
-      if (!response.ok) {
-        throw new Error(
-          data.detail || "Could not resume this session."
-        );
-      }
+let data;
+
+if (contentType.includes("application/json")) {
+  data = await response.json();
+} else {
+  const text = await response.text();
+
+  throw new Error(
+    text || "Server returned an unexpected response."
+  );
+}
+
+if (!response.ok) {
+  throw new Error(
+    data.detail || "Failed to resume the session."
+  );
+}
 
       setResult({
         session_id: data.session_id,
@@ -122,7 +140,71 @@ const [replanMessage, setReplanMessage] = useState("");
     }
   };
 
+  const confirmBooking = async () => {
+  if (!result?.session_id) {
+    setError("Session ID is missing.");
+    return;
+  }
+
+  setConfirming(true);
+  setError("");
+
+  try {
+    const response = await fetch(
+      `${API_URL}/agent/${result.session_id}/confirm`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          request: "confirm",
+        }),
+      }
+    );
+
+    const contentType =
+      response.headers.get("content-type") || "";
+
+    let data;
+
+    if (contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error(
+        text || "Server returned an unexpected response."
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.detail || "Booking confirmation failed."
+      );
+    }
+
+    setBooking(data);
+
+    setResult((prev) => ({
+      ...prev,
+      status: data.status,
+      requires_confirmation: false,
+      error: null,
+    }));
+
+  } catch (err) {
+    console.error("CONFIRM ERROR:", err);
+    setError(
+      err.message || "Booking confirmation failed."
+    );
+  } finally {
+    setConfirming(false);
+  }
+};
+
   const replanTrip = async () => {
+  if (replanning) return;
+
   if (!replanRequest.trim()) {
     setError("Please describe what you want to change.");
     return;
@@ -151,7 +233,23 @@ const [replanMessage, setReplanMessage] = useState("");
       }
     );
 
-    const data = await response.json();
+    const contentType =
+      response.headers.get("content-type") || "";
+
+    let data;
+
+    if (contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+
+      throw new Error(
+        text || "Server returned an unexpected response."
+      );
+    }
+
+    console.log("REPLAN STATUS:", response.status);
+    console.log("REPLAN RESPONSE:", data);
 
     if (!response.ok) {
       throw new Error(
@@ -159,129 +257,50 @@ const [replanMessage, setReplanMessage] = useState("");
       );
     }
 
-    // --------------------------------------------
-    // Update hotel
-    // --------------------------------------------
-
-    const oldHotelCost =
-      Number(data.old_hotel_price);
-
-    const newHotelCost =
-      Number(data.new_hotel_price);
-
-    const newTotal =
-      Number(data.new_total);
-
-    const budgetLimit =
-      Number(
-        result.budget?.budget_limit ??
-        result.trip?.budget ??
-        0
-      );
-
-    const newRemaining =
-      budgetLimit - newTotal;
-
-    // --------------------------------------------
-    // Update React result
-    // --------------------------------------------
-
-    setResult((previous) => ({
-      ...previous,
-
-      status: "awaiting_confirmation",
-
-      requires_confirmation: true,
-
-      replan_count: data.replan_count,
-
-      recommendation: {
-        ...previous.recommendation,
-
-        hotel: data.hotel,
-      },
-
-      budget: {
-        ...previous.budget,
-
-        hotel_cost: newHotelCost,
-
-        total_cost: newTotal,
-
-        remaining: newRemaining,
-
-        within_budget:
-          newTotal <= budgetLimit,
-
-        budget_limit: budgetLimit,
-      },
-    }));
-
-    // --------------------------------------------
-    // Message shown to user
-    // --------------------------------------------
-
     setReplanMessage(
-      `Trip re-planned successfully. You save ₹${Number(
-        data.saved
-      ).toLocaleString("en-IN", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })}.`
+      `Trip re-planned successfully. Saved ₹${Number(
+        data.saved || 0
+      ).toFixed(2)}`
     );
 
-    setReplanRequest("");
+    // Refresh the session so the UI shows the new hotel,
+    // budget, cart, and re-plan count.
+    const resumeResponse = await fetch(
+      `${API_URL}/agent/${result.session_id}/resume`
+    );
+
+    const resumeData = await resumeResponse.json();
+
+    if (resumeResponse.ok) {
+      setResult({
+        session_id: resumeData.session_id,
+        status: resumeData.status,
+        goal: resumeData.goal,
+        trip_id: resumeData.trip_id,
+        current_step: resumeData.current_step,
+        requires_confirmation:
+          resumeData.requires_confirmation,
+        replan_count: resumeData.replan_count,
+        plan_steps: resumeData.plan_steps || [],
+        trip: resumeData.constraints,
+        recommendation:
+          resumeData.recommendation || {
+            flight: null,
+            hotel: null,
+          },
+        budget: resumeData.budget || {},
+        cart: resumeData.cart || null,
+        error: null,
+      });
+    }
 
   } catch (err) {
-    setError(err.message);
+    console.error("REPLAN ERROR:", err);
+    setError(err.message || "Re-planning failed.");
   } finally {
     setReplanning(false);
   }
 };
-
-  // ==================================================
-  // CONFIRM BOOKING
-  // ==================================================
-
-  const confirmBooking = async () => {
-    if (!result?.session_id) {
-      setError("Session ID is missing.");
-      return;
-    }
-
-    setConfirming(true);
-    setError("");
-
-    try {
-      const response = await fetch(
-        `${API_URL}/agent/${result.session_id}/confirm`,
-        {
-          method: "POST",
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.detail || "Booking failed."
-        );
-      }
-
-      setBooking(data);
-
-      setResult((previous) => ({
-        ...previous,
-        status: data.status,
-        requires_confirmation: false,
-      }));
-
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setConfirming(false);
-    }
-  };
 
   // ==================================================
   // RESET
@@ -1099,6 +1118,7 @@ const [replanMessage, setReplanMessage] = useState("");
       />
 
       <button
+        type="button"
         className="replan-button"
         onClick={replanTrip}
         disabled={replanning}
@@ -1120,34 +1140,22 @@ const [replanMessage, setReplanMessage] = useState("");
     <div className="replan-examples">
 
   <button
-    onClick={() =>
-      setReplanRequest(
-        "Find a cheaper hotel"
-      )
-    }
-  >
-    Find a cheaper hotel
-  </button>
+  type="button"
+  onClick={() =>
+    setReplanRequest("Find a cheaper hotel")
+  }
+>
+  Find a cheaper hotel
+</button>
 
-  <button
-    onClick={() =>
-      setReplanRequest(
-        "Find a cheaper hotel"
-      )
-    }
-  >
-    Find a cheaper hotel
-  </button>
-
-  <button
-    onClick={() =>
-      setReplanRequest(
-        "Make it cheaper"
-      )
-    }
-  >
-    Make it cheaper
-  </button>
+<button
+  type="button"
+  onClick={() =>
+    setReplanRequest("Make it cheaper")
+  }
+>
+  Make it cheaper
+</button>
 
 </div>
 
@@ -1292,5 +1300,6 @@ const [replanMessage, setReplanMessage] = useState("");
 
   );
 }
+
 
 export default App;
